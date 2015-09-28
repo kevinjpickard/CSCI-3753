@@ -7,8 +7,10 @@
 #include<asm/uaccess.h>
 #define BUFFER_SIZE 1024
 #define MAJOR_NUMBER 261
-#define DEVICE_NAME simple_character_device
+#define DEVICE_NAME "simple_character_device"
 
+static int opencount = 0;
+static int closecount = 0;
 
 static char device_buffer[BUFFER_SIZE];
 
@@ -18,6 +20,8 @@ ssize_t simple_char_driver_read (struct file *pfile, char __user *buffer, size_t
 	/*  length is the length of the userspace buffer*/
 	/*  current position of the opened file*/
 	/* copy_to_user function. source is device_buffer (the buffer defined at the start of the code) and destination is the userspace 		buffer *buffer */
+	printk(KERN_ALERT "Reading I/O stream from simple char device\n");
+	copy_to_user(buffer, device_buffer, length);
 	return 0;
 }
 
@@ -29,6 +33,9 @@ ssize_t simple_char_driver_write (struct file *pfile, const char __user *buffer,
 	/*  length is the length of the userspace buffer*/
 	/*  current position of the opened file*/
 	/* copy_from_user function. destination is device_buffer (the buffer defined at the start of the code) and source is the userspace 		buffer *buffer */
+	printk(KERN_ALERT "Writing I/O stream to char file\n");
+	copy_from_user(device_buffer, buffer, length);
+	printk(KERN_ALERT "Write Complete.\n");
 	return length;
 }
 
@@ -36,6 +43,8 @@ ssize_t simple_char_driver_write (struct file *pfile, const char __user *buffer,
 int simple_char_driver_open (struct inode *pinode, struct file *pfile)
 {
 	/* print to the log file that the device is opened and also print the number of times this device has been opened until now*/
+	opencount ++;
+	printk(KERN_ALERT "Opened the simple char driver, count is %d.\n", opencount);
 	return 0;
 }
 
@@ -43,6 +52,8 @@ int simple_char_driver_open (struct inode *pinode, struct file *pfile)
 int simple_char_driver_close (struct inode *pinode, struct file *pfile)
 {
 	/* print to the log file that the device is closed and also print the number of times this device has been closed until now*/
+	closecount ++;
+	printk(KERN_ALERT "Closed the simple char driver, count is %d.\n", closecount);
 	return 0;
 }
 
@@ -61,14 +72,14 @@ static int simple_char_driver_init(void)
 	/* print to the log file that the init function is called.*/
 	printk(KERN_ALERT "insdie %s function\n", __FUNCTION__);	
 	/* register the device */
-	register_chrdev(MAJOR_NUMBER, DEVICE_NAME, &simple_char_fops);
+	register_chrdev(MAJOR_NUMBER, DEVICE_NAME, &simple_char_driver_file_operations);
 	return 0;
 }
 
 static int simple_char_driver_exit(void)
 {
 	/* print to the log file that the exit function is called.*/
-	pritnk(KERN_ALERT "inside %s function\n", __FUNCTION__);
+	printk(KERN_ALERT "inside %s function\n", __FUNCTION__);
 	/* unregister  the device using the register_chrdev() function. */
 	unregister_chrdev(MAJOR_NUMBER, DEVICE_NAME);
 	return 0;
